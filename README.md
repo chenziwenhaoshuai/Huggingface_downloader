@@ -1,4 +1,4 @@
-# Hugging Face CLI Tools
+# Hugging Face Tools
 
 [English](README.md) | [中文](README_CN.md)
 
