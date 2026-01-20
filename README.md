@@ -1,79 +1,89 @@
-# HuggingFace 下载器
+# Hugging Face CLI Tools
 
-该项目提供一个脚本，用于从 Hugging Face 下载超大的，难下载的，老报错的数据集。脚本支持错误处理，并允许恢复下载失败的文件。
+[English](README.md) | [中文](README_CN.md)
 
-## 功能
+This repository contains a set of interactive command-line tools to manage files on the Hugging Face Hub. These scripts allow you to easily upload, download, and delete files from your Hugging Face repositories (Models, Datasets, or Spaces).
 
-- **首次下载**：下载指定数据集中的所有文件。
-- **错误处理**：如果下载失败，脚本会记录失败的文件，并允许仅重新下载失败的文件。
-- **并行下载**：脚本使用多线程来加速下载过程，支持同时下载多个文件。
-- **可定制**：你可以修改脚本，下载其他 Hugging Face 数据集。
+## Prerequisites
 
-## 环境要求
-
-- Python 3.x
-- `huggingface_hub` 库
-- `concurrent.futures` 用于并行下载
-- `os`、`json` 等标准 Python 库
-
-可以通过以下命令安装所需的库：
+Make sure you have Python 3 installed. You will need to install the required dependencies:
 
 ```bash
-pip install huggingface_hub
+pip install huggingface_hub inquirer tqdm requests
 ```
 
-## 配置说明
+## Authentication
 
-- **Hugging Face 登录**：脚本需要你使用 API Token 登录 Hugging Face，确保你的 token 是有效的并已正确设置。
-- **环境变量**：你可以通过设置 `HF_ENDPOINT` 环境变量来指定 Hugging Face 的端点，默认值为 `'https://hf-mirror.com'`。
+Most operations (Upload, Delete, and downloading from private repos) require a Hugging Face User Access Token with **write** permissions.
 
-## 脚本使用
+You can provide the token in three ways:
+1.  **CLI Argument**: Pass it via `--token YOUR_TOKEN`.
+2.  **Interactive Prompt**: If not provided, the script will ask for it.
+3.  **Hugging Face Cache**: If you have logged in via `huggingface-cli login`, the scripts will automatically use the cached token.
 
-1. **首次下载**：
-   默认情况下，脚本会下载 `repo/id` 数据集中的所有文件。它会获取数据集文件列表并开始下载。
+## Tools
 
-2. **错误处理与重试**：
-   如果某个文件下载失败，脚本会将失败的文件记录到 `error.txt` 文件中。你可以将 `continue_download` 标志设置为 `True`，只重新下载失败的文件。
+### 1. Downloader (`hf_downloader.py`)
 
-3. **并行下载**：
-   脚本使用 `ThreadPoolExecutor` 来并行下载多个文件，下载的最大并发数由 `max_workers` 参数控制，默认值为 8。
+Interactively select and download files from a Hugging Face repository.
 
-## 脚本结构
+**Usage:**
 
-- **登录**：使用 API Token 登录 Hugging Face。
-- **下载文件**：通过 `snapshot_download` 方法下载数据集中的文件。
-- **错误记录**：下载失败的文件会被记录在 `error.txt` 文件中，以便后续重试。
-- **多线程**：通过并行下载提高下载速度。
+```bash
+# Interactive mode
+python3 hf_downloader.py
 
-## 如何运行
+# Specify repo and type
+python3 hf_downloader.py username/repo_id --type model
 
-1. 克隆此项目到本地机器：
-   ```bash
-   git clone https://github.com/yourusername/huggingface_downloader.git
-   cd huggingface_downloader
-   ```
-
-2. 运行脚本：
-   ```bash
-   python download_dataset.py
-   ```
-
-3. 如果某个下载失败，脚本会将失败的文件记录到 `error.txt` 中。你可以将 `continue_download = True` 设置为 `True`，然后重新运行脚本来下载失败的文件。
-
-## 问题排查
-
-- 确保你的 Hugging Face API Token 是有效的，并且正确配置。
-- 检查本地的存储空间，确保有足够的空间来存储下载的文件。
-- 如果下载遇到问题，检查你的网络连接是否稳定。
-
-## 许可证
-
-该项目采用 MIT 许可证，具体内容请见 [LICENSE](LICENSE) 文件。
+# Download specific files
+python3 hf_downloader.py username/repo_id --files config.json,pytorch_model.bin
 ```
 
-### 说明：
-- 该 **README** 中已经隐藏了敏感信息（如 API Token），你需要在自己的代码中插入正确的值。
-- 文件中详细说明了项目的功能、使用方法、配置说明和排查问题的建议，确保其他用户能够理解如何使用这个下载器。
-- 在 **如何运行** 部分，提供了从 GitHub 克隆项目并运行脚本的具体步骤。
+**Features:**
+-   Interactive file selection menu.
+-   "ALL (Download all files)" option to download the entire repository.
+-   Supports Models and Datasets.
+-   Resumable downloads using `huggingface_hub`.
 
-你可以将这个内容放到你的项目的 `README.md` 文件中。如果以后需要更改或添加更多说明，可以根据实际情况进行调整。
+### 2. Uploader (`hf_uploader.py`)
+
+Upload a file or a folder to a Hugging Face repository. It preserves the directory structure when uploading folders.
+
+**Usage:**
+
+```bash
+# Interactive mode
+python3 hf_uploader.py
+
+# Upload a specific file/folder to a repo
+python3 hf_uploader.py path/to/local/folder --repo username/repo_id --type model
+```
+
+**Features:**
+-   Automatically creates the repository if it doesn't exist (with visibility options).
+-   Preserves folder structure (e.g., uploading `my_folder` creates `my_folder/` in the repo).
+-   Supports Models, Datasets, and Spaces.
+
+### 3. Deleter (`hf_deleter.py`)
+
+Interactively select and delete files from a Hugging Face repository.
+
+**Usage:**
+
+```bash
+# Interactive mode
+python3 hf_deleter.py
+
+# Specify repo
+python3 hf_deleter.py username/repo_id --type dataset
+```
+
+**Features:**
+-   Lists files with sizes.
+-   Batch deletion (deletes multiple files in a single commit).
+-   Safety confirmation prompt before deletion.
+
+## License
+
+MIT
